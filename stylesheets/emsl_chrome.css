@@ -98,7 +98,7 @@ header.secondary .logo_container {
 .logo_image {
   width:100%;
   height:100%;
-  background: url(../images/emsl_logo_white.png);
+  background: url(/resources/images/emsl_logos/emsl_logo_white.png);
   background-size: 174px 73px;
 }
 
@@ -212,7 +212,7 @@ footer a:visited {
 }
 
 .logo_container {
-  background:url(../images/emsl-doe_combined.png) no-repeat top left;
+  background:url(/resources/images/emsl_logos/emsl-doe_combined.png) no-repeat top left;
   background-size: 346px 107px;
   position: absolute;
   top: 10px;
@@ -224,15 +224,15 @@ footer a:visited {
 @media
 (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .logo_container{
-    background:url(../images/emsl-doe_combined@2x.png) no-repeat top left;
+    background:url(/resources/images/emsl_logos/emsl-doe_combined@2x.png) no-repeat top left;
     background-size: 346px 107px;
   }
   .social {
-    background:url(../images/social/social_sprites@2x.png) no-repeat top left;
+    background:url(/resources/images/social/social_sprites@2x.png) no-repeat top left;
     background-size: 16px;
   }
   #logo_image {
-    background: url(../images/emsl_logo_white@2x.png);
+    background: url(/resources/images/emsl_logos/emsl_logo_white@2x.png);
     background-size: 174px 73px;
   }
 }
@@ -240,7 +240,7 @@ footer a:visited {
 @media
 (-webkit-min-device-pixel-ratio: 3), (min-resolution: 288dpi) {
   .logo_container{
-    background:url(../images/emsl-doe_combined@3x.png) no-repeat top left;
+    background:url(../images/emsl_logos/emsl-doe_combined@3x.png) no-repeat top left;
     background-size: 346px 107px;
   }
   .social {
@@ -248,7 +248,7 @@ footer a:visited {
     background-size: 16px;
   }
   #logo_image {
-    background: url(../images/emsl_logo_white@3x.png);
+    background: url(/resources/images/emsl_logos/emsl_logo_white@3x.png);
     background-size: 174px 73px;
   }
 }
