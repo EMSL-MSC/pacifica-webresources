@@ -258,7 +258,7 @@ div.buttons img, div.buttons a img {
   height:16px;
 }
 button:hover, .buttons input[type="button"]:hover, .buttons a:hover{
-  background-color:#b15611; 
+  background-color:#b15611;
   text-decoration:none;
 }
 
@@ -270,7 +270,7 @@ button:hover, .buttons input[type="button"]:hover, .buttons a:hover{
   background-color:#b15611;
 }
 div.buttons a.positive:active{
-  
+
 }
 */
 div.error_container{
@@ -311,7 +311,7 @@ div.form_container input[type="image"] {
 }
 
 div.form_container table{
-  width:100%; 
+  width:100%;
   font-size:13px;
 }
 div.form_container tr {
@@ -357,15 +357,15 @@ div.form_container td {
 }
 
 #main h2.storytitle {
-  border-bottom: 1px solid #ccc; 
-  margin-bottom: 6px; 
-  padding-bottom: 2px; 
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 6px;
+  padding-bottom: 2px;
   position: relative;
 }
 #main div.meta {
   color: #666;
-  font-size: 80%; 
-  line-height: 100%; 
+  font-size: 80%;
+  line-height: 100%;
   margin-bottom: 12px;
 }*/
 
@@ -374,14 +374,14 @@ input.disabled_button{
   background-color: #efefef !important;
   border-color: #aaaaaa !important;
   -webkit-box-shadow: none;
-  -moz-box-shadow: none;     
+  -moz-box-shadow: none;
 }
 .submit_buttons input[disabled="disabled"]{
   color:#aaaaaa !important;
   background-color: #efefef !important;
   border-color: #aaaaaa !important;
   -webkit-box-shadow: none;
-  -moz-box-shadow: none;  
+  -moz-box-shadow: none;
 }
 
 
@@ -402,7 +402,7 @@ input.disabled_button{
   font-size:0.9em;
   font-weight:bold;
   border-radius: 5px;
-   -webkit-border-radius:5px;  
+   -webkit-border-radius:5px;
   -moz-border-radius: 5px;
   -webkit-box-shadow: rgba(0, 0, 0, 0.597656) 0px 0px 2px;
   -moz-box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -432,7 +432,7 @@ img.checkmark_image {
 
 li.li_container{
   -moz-border-radius: 15px;
-   -webkit-border-radius:15px;  
+   -webkit-border-radius:15px;
   border-radius: 15px;
   margin:4px 5px 4px 5px !important;
   padding:2px 20px 2px 20px !important;
@@ -442,20 +442,20 @@ li.li_container{
   width:150px;
   float:left;
 }
-  
+
 li.li_container input[type="button"] {
   position:absolute;
   top:3px;
   right:4px;
   color:#fff;
-  float:right; 
+  float:right;
   background-color:#ccc;
   display:block;
   border: 2px solid #888;
   font-size:0.8em;
   font-weight:bold;
    -moz-border-radius: 12px;
-   -webkit-border-radius:12px;   
+   -webkit-border-radius:12px;
   border-radius: 12px;
   padding:1px 2px 1px 2px;
 }
@@ -569,7 +569,7 @@ div.content_block p {
   vertical-align:middle;
   background-image:url(/resources/images/disclosure_sprite.png);
   background-repeat: no-repeat;
-  background-size: 64px 16px; 
+  background-size: 64px 16px;
 }
 .dc_down {background-position: 0 0;}
 .dc_up {background-position: -16px 0;}
@@ -598,8 +598,8 @@ div.content_block p {
 
 
 
-.textbox_control { 
-  background-color: #ffffff; 
+.textbox_control {
+  background-color: #ffffff;
   border: 2px solid #aaa;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
@@ -715,10 +715,11 @@ div.edit_block p {
 }
 
 #last_update_timestamp {
-  position: absolute;
-  right: 20px;
-  bottom:13px;
-  color: #cfcfcf;
+  float: right;
+  margin-right: 20px;
+  position: relative;
+  right: auto;
+  bottom: auto;
 }
 
 .banner_bar_background{
@@ -784,4 +785,3 @@ div.buttons input.danger_button:hover{
 div.buttons input.danger_button:active{
   background-color: rgb(135,45,51);
 }
-
