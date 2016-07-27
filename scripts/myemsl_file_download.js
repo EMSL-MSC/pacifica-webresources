@@ -1,9 +1,9 @@
 var bearer_token = "";
-var url_base = '/myemsl/status/index.php';
-var token_url_base = '/myemsl/itemauth/';
-var token_url_base = url_base + '/cart/get_cart_token/';
-var cart_url_base = '/myemsl/api/2/cart/';
-var cart_info_url = url_base + '/cart/listing/';
+// var url_base = '/myemsl/status/index.php';
+var url_base = 'https://dev0.my.emsl.pnl.gov';
+var token_url_base = '/cart/get_cart_token/';
+var cart_url_base = url_base + '/myemsl/api/2/cart/';
+var cart_info_url = '/cart/listing/';
 var max_size = 1024 * 1024 * 1024 * 50; //50 GB (base 2)
 var friendly_max_size = '';
 var exceed_max_size_allow = false;
@@ -21,7 +21,7 @@ var setup_file_download_links = function(parent_item) {
     var el = $(e.target);
     cart_download(parent_item, tx_id, null);
   });
-  
+
 };
 
 
@@ -59,7 +59,7 @@ var get_token = function(item_id_list, tx_id){
     });
   })
   .fail(function(jq,textStatus,errormsg){
-    
+
   });
 };
 
@@ -97,7 +97,7 @@ var submit_cart_for_download = function(tx_id, cart_id){
   .fail(function(jq,textStatus,errormsg){
     debugger;
   });
-  
+
 };
 
 var cart_delete = function(cart_id){
@@ -125,7 +125,7 @@ var dead_cart_delete = function(cart_id){
   if (cart_id == null) {
     return;
   }
-  var url = url_base + '/cart/delete/' + cart_id;
+  var url = '/cart/delete/' + cart_id;
   $.get(url, function(data){
     $('#cart_listing').html(data);
     get_cart_count();
@@ -139,7 +139,7 @@ var check_cart_status = function(tx_id){
     $('#cart_listing').html(data);
     get_cart_count();
   });
-  
+
 };
 
 var get_cart_count = function(){
@@ -193,14 +193,14 @@ var get_file_sizes = function(tree_container){
   var total_size = 0;
   var sizes = {};
   var item_info = {};
-  
+
   var item_id_list = $.map(tree.getSelectedNodes(), function(node){
     if(!node.folder){
       return parseInt(node.key.replace('ft_item_',''),10);
     }
   });
 
-  
+
   tree.render(true,true);
   $.each(item_id_list, function(index,item){
     item_info = JSON.parse($('#item_id_' + item).html());
@@ -251,7 +251,7 @@ var update_download_status = function(tree_container, selectCount){
     $('#status_block_' + el_id).html('&nbsp;');
     dl_button.slideUp('slow');
   }
-  
+
 };
 
 var download_myemsl_item = function(file_object_data) {
@@ -300,7 +300,7 @@ var myemsl_tape_status = function(token, file_object_data, cb) {
     }//(token, status)
   });
   return ajx;
-}; 
+};
 
 
 var myemsl_size_format = function(bytes) {
