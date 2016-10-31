@@ -1,6 +1,6 @@
 Name:		pacifica-web-common
 Epoch:		1
-Version:	0.99.3
+Version:	0.99.4
 Release:	1%{?dist}
 Summary:	The pacifica common resources for web pages
 Group:		System Environment/Libraries
