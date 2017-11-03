@@ -14,18 +14,34 @@
  * Add a child counter bubble to tree nodes.
  * (Extension module for jquery.fancytree.js: https://github.com/mar10/fancytree/)
  *
- * Copyright (c) 2008-2015, Martin Wendt (http://wwWendt.de)
+ * Copyright (c) 2008-2017, Martin Wendt (http://wwWendt.de)
  *
  * Released under the MIT license
  * https://github.com/mar10/fancytree/wiki/LicenseInfo
  *
- * @version 2.8.0
- * @date 2015-02-08T17:56
+ * @version @VERSION
+ * @date @DATE
  */
 
-// To keep the global namespace clean, we wrap everything in a closure
+// To keep the global namespace clean, we wrap everything in a closure.
+// The UMD wrapper pattern defines the dependencies on jQuery and the
+// Fancytree core module, and makes sure that we can use the `require()`
+// syntax with package loaders.
 
-;(function($, undefined) {
+;(function( factory ) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define( [ "jquery", "./jquery.fancytree" ], factory );
+	} else if ( typeof module === "object" && module.exports ) {
+		// Node/CommonJS
+		require("jquery.fancytree");
+		module.exports = factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory( jQuery );
+	}
+
+}( function( $ ) {
 
 // Consider to use [strict mode](http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/)
 "use strict";
@@ -41,7 +57,7 @@
 // --------------
 
 // New member functions can be added to the `Fancytree` class.
-// This function will be available for every tree instance.
+// This function will be available for every tree instance:
 //
 //     var tree = $("#tree").fancytree("getTree");
 //     tree.countSelected(false);
@@ -49,18 +65,41 @@
 $.ui.fancytree._FancytreeClass.prototype.countSelected = function(topOnly){
 	var tree = this,
 		treeOptions = tree.options;
+
 	return tree.getSelectedNodes(topOnly).length;
 };
 
 
 // The `FancytreeNode` class can also be easily extended. This would be called
 // like
+//     node.updateCounters();
 //
-//     node.toUpper();
+// It is also good practice to add a docstring comment.
+/**
+ * [ext-childcounter] Update counter badges for `node` and its parents.
+ * May be called in the `loadChildren` event, to update parents of lazy loaded
+ * nodes.
+ * @alias FancytreeNode#updateCounters
+ * @requires jquery.fancytree.childcounters.js
+ */
+$.ui.fancytree._FancytreeNodeClass.prototype.updateCounters = function(){
+	var node = this,
+		$badge = $("span.fancytree-childcounter", node.span),
+		extOpts = node.tree.options.childcounter,
+		count = node.countChildren(extOpts.deep);
 
-$.ui.fancytree._FancytreeNodeClass.prototype.toUpper = function(){
-	var node = this;
-	return node.setTitle(node.title.toUpperCase());
+	node.data.childCounter = count;
+	if( (count || !extOpts.hideZeros) && (!node.isExpanded() || !extOpts.hideExpanded) ) {
+		if( !$badge.length ) {
+			$badge = $("<span class='fancytree-childcounter'/>").appendTo($("span.fancytree-icon", node.span));
+		}
+		$badge.text(count);
+	} else {
+		$badge.remove();
+	}
+	if( extOpts.deep && !node.isTopLevel() && !node.isRoot() ) {
+		node.parent.updateCounters();
+	}
 };
 
 
@@ -80,8 +119,8 @@ $.ui.fancytree.prototype.widgetMethod1 = function(arg1){
 // A full blown extension, extension is available for all trees and can be
 // enabled like so (see also the [live demo](http://wwwendt.de/tech/fancytree/demo/sample-ext-childcounter.html)):
 //
-//    <script src="../src/jquery.fancytree.js" type="text/javascript"></script>
-//    <script src="../src/jquery.fancytree.childcounter.js" type="text/javascript"></script>
+//    <script src="../src/jquery.fancytree.js"></script>
+//    <script src="../src/jquery.fancytree.childcounter.js"></script>
 //    ...
 //
 //     $("#tree").fancytree({
@@ -99,7 +138,7 @@ $.ui.fancytree.registerExtension({
 // Every extension must be registered by a unique name.
 	name: "childcounter",
 // Version information should be compliant with [semver](http://semver.org)
-	version: "1.0.0",
+	version: "@VERSION",
 
 // Extension specific options and their defaults.
 // This options will be available as `tree.options.childcounter.hideExpanded`
@@ -162,14 +201,16 @@ $.ui.fancytree.registerExtension({
 			extOpts = ctx.options.childcounter,
 			count = (node.data.childCounter == null) ? node.countChildren(extOpts.deep) : +node.data.childCounter;
 // Let the base implementation render the title
-		this._superApply(arguments);
+// We use `_super()` instead of `_superApply()` here, since it is a little bit
+// more performant when called often
+		this._super(ctx, title);
 // Append a counter badge
 		if( (count || ! extOpts.hideZeros) && (!node.isExpanded() || !extOpts.hideExpanded) ){
 			$("span.fancytree-icon", node.span).append($("<span class='fancytree-childcounter'/>").text(count));
 		}
 	},
 // Overload the `setExpanded` hook, so the counters are updated
-	nodeSetExpanded: function(ctx, flag, opts) {
+	nodeSetExpanded: function(ctx, flag, callOpts) {
 		var tree = ctx.tree,
 			node = ctx.node;
 // Let the base implementation expand/collapse the node, then redraw the title
@@ -181,5 +222,6 @@ $.ui.fancytree.registerExtension({
 
 // End of extension definition
 });
-// End of namespace closure
-}(jQuery));
+// Value returned by `require('jquery.fancytree..')`
+return $.ui.fancytree;
+}));  // End of closure

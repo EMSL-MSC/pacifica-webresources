@@ -4,16 +4,33 @@
  * Support keyboard navigation for trees with embedded input controls.
  * (Extension module for jquery.fancytree.js: https://github.com/mar10/fancytree/)
  *
- * Copyright (c) 2008-2015, Martin Wendt (http://wwWendt.de)
+ * Copyright (c) 2008-2017, Martin Wendt (http://wwWendt.de)
  *
  * Released under the MIT license
  * https://github.com/mar10/fancytree/wiki/LicenseInfo
  *
- * @version 2.8.0
- * @date 2015-02-08T17:56
+ * @version @VERSION
+ * @date @DATE
  */
 
-;(function($, window, document, undefined) {
+;(function( factory ) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define([
+			 "jquery",
+			 "./jquery.fancytree",
+			 "./jquery.fancytree.table"
+		 ], factory );
+	} else if ( typeof module === "object" && module.exports ) {
+		// Node/CommonJS
+		require("jquery.fancytree.table");  // core + table
+		module.exports = factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory( jQuery );
+	}
+
+}( function( $ ) {
 
 "use strict";
 
@@ -30,6 +47,7 @@ var	KC = $.ui.keyCode,
 	NAV_KEYS = {
 		"text": [KC.UP, KC.DOWN],
 		"checkbox": [KC.UP, KC.DOWN, KC.LEFT, KC.RIGHT],
+		"link": [KC.UP, KC.DOWN, KC.LEFT, KC.RIGHT],
 		"radiobutton": [KC.UP, KC.DOWN, KC.LEFT, KC.RIGHT],
 		"select-one": [KC.LEFT, KC.RIGHT],
 		"select-multiple": [KC.LEFT, KC.RIGHT]
@@ -100,7 +118,7 @@ function findNeighbourTd($target, keyCode){
 				// Find adjacent cell in the same column
 				$tdNext = findTdAtColIdx($tr, colIdx);
 				// Skip cells that don't conatain a focusable element
-				if( $tdNext && $tdNext.find(":input").length ) {
+				if( $tdNext && $tdNext.find(":input,a").length ) {
 					break;
 				}
 			}
@@ -115,7 +133,7 @@ function findNeighbourTd($target, keyCode){
  */
 $.ui.fancytree.registerExtension({
 	name: "gridnav",
-	version: "0.0.1",
+	version: "@VERSION",
 	// Default options for this extension.
 	options: {
 		autofocusInput:   false,  // Focus first embedded input if node gets activated
@@ -141,7 +159,7 @@ $.ui.fancytree.registerExtension({
 			}
 		});
 	},
-	nodeSetActive: function(ctx, flag) {
+	nodeSetActive: function(ctx, flag, callOpts) {
 		var $outer,
 			opts = ctx.options.gridnav,
 			node = ctx.node,
@@ -175,17 +193,20 @@ $.ui.fancytree.registerExtension({
 			event = ctx.originalEvent,
 			$target = $(event.target);
 
-		// jQuery
-		inputType = $target.is(":input:enabled") ? $target.prop("type") : null;
-//		ctx.tree.debug("ext-gridnav nodeKeydown", event, inputType);
+		if( $target.is(":input:enabled") ) {
+			inputType = $target.prop("type");
+		} else if( $target.is("a") ) {
+			inputType = "link";
+		}
+		// ctx.tree.debug("ext-gridnav nodeKeydown", event, inputType);
 
 		if( inputType && opts.handleCursorKeys ){
 			handleKeys = NAV_KEYS[inputType];
 			if( handleKeys && $.inArray(event.which, handleKeys) >= 0 ){
 				$td = findNeighbourTd($target, event.which);
-				// ctx.node.debug("ignore keydown in input", event.which, handleKeys);
 				if( $td && $td.length ) {
-					$td.find(":input:enabled").focus();
+					// ctx.node.debug("ignore keydown in input", event.which, handleKeys);
+					$td.find(":input:enabled,a").focus();
 					// Prevent Fancytree default navigation
 					return false;
 				}
@@ -196,4 +217,6 @@ $.ui.fancytree.registerExtension({
 		return this._superApply(arguments);
 	}
 });
-}(jQuery, window, document));
+// Value returned by `require('jquery.fancytree..')`
+return $.ui.fancytree;
+}));  // End of closure

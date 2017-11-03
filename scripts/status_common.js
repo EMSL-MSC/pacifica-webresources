@@ -193,7 +193,7 @@ var get_instrument_list = function(proposal_id) {
 
 var setup_metadata_disclosure = function() {
     $("ul.metadata_container").hide();
-    $(".disclosure_button").unbind("click").click(function() {
+    $(".disclosure_button").off("click").on("click", function() {
         var el = $(this);
         var container = el.parentsUntil("div").siblings("ul.metadata_container");
         if (el.hasClass("dc_up")) {

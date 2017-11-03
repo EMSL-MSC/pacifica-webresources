@@ -5685,7 +5685,7 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editStart = function(){
 	// Focus <input> and bind keyboard handler
 	$input
 		.focus()
-		.change(function(event){
+		.on("change", function(event){
 			$input.addClass("fancytree-edit-dirty");
 		}).keydown(function(event){
 			switch( event.which ) {

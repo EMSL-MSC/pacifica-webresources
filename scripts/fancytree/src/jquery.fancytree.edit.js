@@ -4,16 +4,29 @@
  * Make node titles editable.
  * (Extension module for jquery.fancytree.js: https://github.com/mar10/fancytree/)
  *
- * Copyright (c) 2008-2015, Martin Wendt (http://wwWendt.de)
+ * Copyright (c) 2008-2017, Martin Wendt (http://wwWendt.de)
  *
  * Released under the MIT license
  * https://github.com/mar10/fancytree/wiki/LicenseInfo
  *
- * @version 2.8.0
- * @date 2015-02-08T17:56
+ * @version @VERSION
+ * @date @DATE
  */
 
-;(function($, window, document, undefined) {
+;(function( factory ) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define( [ "jquery", "./jquery.fancytree" ], factory );
+	} else if ( typeof module === "object" && module.exports ) {
+		// Node/CommonJS
+		require("jquery.fancytree");
+		module.exports = factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory( jQuery );
+	}
+
+}( function( $ ) {
 
 "use strict";
 
@@ -43,7 +56,7 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editStart = function(){
 			node: node,
 			tree: tree,
 			options: tree.options,
-			isNew: $(node.span).hasClass("fancytree-edit-new"),
+			isNew: $(node[tree.statusClassPropName]).hasClass("fancytree-edit-new"),
 			orgTitle: node.title,
 			input: null,
 			dirty: false
@@ -70,7 +83,7 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editStart = function(){
 	$input = $("<input />", {
 		"class": "fancytree-edit-input",
 		type: "text",
-		value: unescapeHtml(eventData.orgTitle)
+		value: tree.options.escapeTitles ? eventData.orgTitle : unescapeHtml(eventData.orgTitle)
 	});
 	local.eventData.input = $input;
 	if ( instOpts.adjustWidthOfs != null ) {
@@ -121,14 +134,13 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editEnd = function(applyChanges, _e
 		$title = $(".fancytree-title", node.span),
 		$input = $title.find("input.fancytree-edit-input");
 
-	// eventData.isNew = $(node.span).hasClass("fancytree-edit-new");
-
 	if( instOpts.trim ) {
 		$input.val($.trim($input.val()));
 	}
 	newVal = $input.val();
-	// eventData.dirty = $input.hasClass("fancytree-edit-dirty") || ;
+
 	eventData.dirty = ( newVal !== node.title );
+	eventData.originalEvent = _event;
 
 	// Find out, if saving is required
 	if( applyChanges === false ) {
@@ -150,13 +162,13 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editEnd = function(applyChanges, _e
 	}
 	$input
 		.removeClass("fancytree-edit-dirty")
-		.unbind();
+		.off();
 	// Unbind outer-click handler
 	$(document).off(".fancytree-edit");
 
 	if( eventData.save ) {
-		node.setTitle( escapeHtml(newVal) );
-		// $(node.span).removeClass("fancytree-edit-new");
+		// # 171: escape user input (not required if global escaping is on)
+		node.setTitle( tree.options.escapeTitles ? newVal : escapeHtml(newVal) );
 		node.setFocus();
 	}else{
 		if( eventData.isNew ) {
@@ -188,10 +200,12 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editEnd = function(applyChanges, _e
 * @param {Object} [init] NodeData (or simple title string)
 * @alias FancytreeNode#editCreateNode
 * @requires jquery.fancytree.edit.js
+* @since 2.4
 */
 $.ui.fancytree._FancytreeNodeClass.prototype.editCreateNode = function(mode, init){
 	var newNode,
-		that = this;
+		tree = this.tree,
+		self = this;
 
 	mode = mode || "child";
 	if( init == null ) {
@@ -204,15 +218,23 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editCreateNode = function(mode, ini
 	// Make sure node is expanded (and loaded) in 'child' mode
 	if( mode === "child" && !this.isExpanded() && this.hasChildren() !== false ) {
 		this.setExpanded().done(function(){
-			that.editCreateNode(mode, init);
+			self.editCreateNode(mode, init);
 		});
 		return;
 	}
 	newNode = this.addNode(init, mode);
-	newNode.makeVisible();
-	$(newNode.span).addClass("fancytree-edit-new");
-	this.tree.ext.edit.relatedNode = this;
-	newNode.editStart();
+
+	// #644: Don't filter new nodes.
+	newNode.match = true;
+	$(newNode[tree.statusClassPropName])
+		.removeClass("fancytree-hide")
+		.addClass("fancytree-match");
+
+	newNode.makeVisible(/*{noAnimation: true}*/).done(function(){
+		$(newNode[tree.statusClassPropName]).addClass("fancytree-edit-new");
+		self.tree.ext.edit.relatedNode = self;
+		newNode.editStart();
+	});
 };
 
 
@@ -224,7 +246,7 @@ $.ui.fancytree._FancytreeNodeClass.prototype.editCreateNode = function(mode, ini
  * @requires jquery.fancytree.edit.js
  */
 $.ui.fancytree._FancytreeClass.prototype.isEditing = function(){
-	return this.ext.edit.currentNode;
+	return this.ext.edit ? this.ext.edit.currentNode : null;
 };
 
 
@@ -235,7 +257,7 @@ $.ui.fancytree._FancytreeClass.prototype.isEditing = function(){
  * @requires jquery.fancytree.edit.js
  */
 $.ui.fancytree._FancytreeNodeClass.prototype.isEditing = function(){
-	return this.tree.ext.edit.currentNode === this;
+	return this.tree.ext.edit ? this.tree.ext.edit.currentNode === this : false;
 };
 
 
@@ -244,13 +266,13 @@ $.ui.fancytree._FancytreeNodeClass.prototype.isEditing = function(){
  */
 $.ui.fancytree.registerExtension({
 	name: "edit",
-	version: "0.2.0",
+	version: "@VERSION",
 	// Default options for this extension.
 	options: {
 		adjustWidthOfs: 4,   // null: don't adjust input size to content
 		allowEmpty: false,   // Prevent empty input
 		inputCss: {minWidth: "3em"},
-		triggerCancel: ["esc", "tab", "click"],
+		// triggerCancel: ["esc", "tab", "click"],
 		// triggerStart: ["f2", "dblclick", "shift+click", "mac+enter"],
 		triggerStart: ["f2", "shift+click", "mac+enter"],
 		trim: true,          // Trim whitespace before save
@@ -303,4 +325,6 @@ $.ui.fancytree.registerExtension({
 		return this._superApply(arguments);
 	}
 });
-}(jQuery, window, document));
+// Value returned by `require('jquery.fancytree..')`
+return $.ui.fancytree;
+}));  // End of closure

@@ -4,16 +4,29 @@
  * Render tree like a Mac Finder's column view.
  * (Extension module for jquery.fancytree.js: https://github.com/mar10/fancytree/)
  *
- * Copyright (c) 2008-2015, Martin Wendt (http://wwWendt.de)
+ * Copyright (c) 2008-2017, Martin Wendt (http://wwWendt.de)
  *
  * Released under the MIT license
  * https://github.com/mar10/fancytree/wiki/LicenseInfo
  *
- * @version 2.8.0
- * @date 2015-02-08T17:56
+ * @version @VERSION
+ * @date @DATE
  */
 
-;(function($, window, document, undefined) {
+;(function( factory ) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define( [ "jquery", "./jquery.fancytree" ], factory );
+	} else if ( typeof module === "object" && module.exports ) {
+		// Node/CommonJS
+		require("jquery.fancytree");
+		module.exports = factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory( jQuery );
+	}
+
+}( function( $ ) {
 
 "use strict";
 
@@ -41,7 +54,7 @@ function _assert(cond, msg){
  */
 $.ui.fancytree.registerExtension({
 	name: "columnview",
-	version: "0.0.1",
+	version: "@VERSION",
 	// Default options for this extension.
 	options: {
 	},
@@ -78,7 +91,7 @@ $.ui.fancytree.registerExtension({
 		tree.widget.options.clickFolderMode = 1;
 
 		// Make sure that only active path is expanded when a node is activated:
-		$table.bind("fancytreeactivate", function(event, data){
+		$table.on("fancytreeactivate", function(event, data){
 			var i, tdList,
 				node = data.node,
 				tree = data.tree,
@@ -97,7 +110,7 @@ $.ui.fancytree.registerExtension({
 				node.setExpanded();
 			}
 		// Adjust keyboard behaviour:
-		}).bind("fancytreekeydown", function(event, data){
+		}).on("fancytreekeydown", function(event, data){
 			var next = null,
 				node = data.node || data.tree.getFirstChild();
 			switch(event.which){
@@ -124,7 +137,7 @@ $.ui.fancytree.registerExtension({
 	},
 	nodeRender: function(ctx, force, deep, collapsed, _recursive) {
 		// Render standard nested <ul> - <li> hierarchy
-		this._superApply(arguments);
+		this._super(ctx, force, deep, collapsed, _recursive);
 		// Remove expander and add a trailing triangle instead
 		var level, $tdChild, $ul,
 			tree = ctx.tree,
@@ -147,4 +160,6 @@ $.ui.fancytree.registerExtension({
 		}
 	}
 });
-}(jQuery, window, document));
+// Value returned by `require('jquery.fancytree..')`
+return $.ui.fancytree;
+}));  // End of closure

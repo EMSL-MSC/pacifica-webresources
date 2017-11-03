@@ -1,19 +1,32 @@
 /*!
  * jquery.fancytree.table.js
  *
- * Render tree as table (aka 'treegrid', 'tabletree').
+ * Render tree as table (aka 'tree grid', 'table tree').
  * (Extension module for jquery.fancytree.js: https://github.com/mar10/fancytree/)
  *
- * Copyright (c) 2008-2015, Martin Wendt (http://wwWendt.de)
+ * Copyright (c) 2008-2017, Martin Wendt (http://wwWendt.de)
  *
  * Released under the MIT license
  * https://github.com/mar10/fancytree/wiki/LicenseInfo
  *
- * @version 2.8.0
- * @date 2015-02-08T17:56
+ * @version @VERSION
+ * @date @DATE
  */
 
-;(function($, window, document, undefined) {
+;(function( factory ) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define( [ "jquery", "./jquery.fancytree" ], factory );
+	} else if ( typeof module === "object" && module.exports ) {
+		// Node/CommonJS
+		require("jquery.fancytree");
+		module.exports = factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory( jQuery );
+	}
+
+}( function( $ ) {
 
 "use strict";
 
@@ -25,6 +38,10 @@ function _assert(cond, msg){
 	if(!cond){
 		$.error("Assertion failed " + msg);
 	}
+}
+
+function insertFirstChild(referenceNode, newNode) {
+	referenceNode.insertBefore(newNode, referenceNode.firstChild);
 }
 
 function insertSiblingAfter(referenceNode, newNode) {
@@ -57,7 +74,7 @@ function findPrevRowNode(node){
 		prev = siblings[i - 1];
 		_assert(prev.tr);
 		// descend to lowest child (with a <tr> tag)
-		while(prev.children){
+		while(prev.children && prev.children.length){
 			last = prev.children[prev.children.length - 1];
 			if(!last.tr){
 				break;
@@ -71,14 +88,24 @@ function findPrevRowNode(node){
 	return prev;
 }
 
+/* Render callback for 'wide' mode. */
+// function _renderStatusNodeWide(event, data) {
+// 	var node = data.node,
+// 		nodeColumnIdx = data.options.table.nodeColumnIdx,
+// 		$tdList = $(node.tr).find(">td");
+
+// 	$tdList.eq(nodeColumnIdx).attr("colspan", data.tree.columnCount);
+// 	$tdList.not(":eq(" + nodeColumnIdx + ")").remove();
+// }
+
 
 $.ui.fancytree.registerExtension({
 	name: "table",
-	version: "0.2.0",
+	version: "@VERSION",
 	// Default options for this extension.
 	options: {
 		checkboxColumnIdx: null, // render the checkboxes into the this column index (default: nodeColumnIdx)
-		customStatus: false,	 // true: generate renderColumns events for status nodes
+		// customStatus: false,	 // true: generate renderColumns events for status nodes
 		indentation: 16,         // indent every node level by 16px
 		nodeColumnIdx: 0         // render node expander, icon, and title to this column (default: #0)
 	},
@@ -86,53 +113,97 @@ $.ui.fancytree.registerExtension({
 	// `this`       : is this extension object
 	// `this._super`: the virtual function that was overriden (member of prev. extension or Fancytree)
 	treeInit: function(ctx){
-		var i, $row, tdRole,
+		var i, columnCount, n, $row, $tbody,
 			tree = ctx.tree,
+			opts = ctx.options,
+			tableOpts = opts.table,
 			$table = tree.widget.element;
 
-		$table.addClass("fancytree-container fancytree-ext-table");
-		tree.tbody = $table.find("> tbody")[0];
-		tree.columnCount = $("thead >tr >th", $table).length;
-		$(tree.tbody).empty();
-
-		tree.rowFragment = document.createDocumentFragment();
-		$row = $("<tr />");
-		tdRole = "";
-		if(ctx.options.aria){
-			$row.attr("role", "row");
-			tdRole = " role='gridcell'";
-		}
-		for(i=0; i<tree.columnCount; i++) {
-			if(ctx.options.table.nodeColumnIdx === i){
-				$row.append("<td" + tdRole + "><span class='fancytree-node' /></td>");
-			}else{
-				$row.append("<td" + tdRole + " />");
+		if( tableOpts.customStatus != null ) {
+			if( opts.renderStatusColumns != null) {
+				$.error("The 'customStatus' option is deprecated since v2.15.0. Use 'renderStatusColumns' only instead.");
+			} else {
+				tree.warn("The 'customStatus' option is deprecated since v2.15.0. Use 'renderStatusColumns' instead.");
+				opts.renderStatusColumns = tableOpts.customStatus;
 			}
 		}
+		if( opts.renderStatusColumns ) {
+			if( opts.renderStatusColumns === true ) {
+				opts.renderStatusColumns = opts.renderColumns;
+			// } else if( opts.renderStatusColumns === "wide" ) {
+			// 	opts.renderStatusColumns = _renderStatusNodeWide;
+			}
+		}
+
+		$table.addClass("fancytree-container fancytree-ext-table");
+		tree.tbody = $table.find(">tbody")[0];
+		$tbody = $(tree.tbody);
+
+		// Prepare row templates:
+		// Determine column count from table header if any
+		columnCount = $("thead >tr:last >th", $table).length;
+		// Read TR templates from tbody if any
+		$row = $tbody.children("tr:first");
+		if( $row.length ) {
+			n = $row.children("td").length;
+			if( columnCount && n !== columnCount ) {
+				tree.warn("Column count mismatch between thead (" + columnCount + ") and tbody (" + n + "): using tbody.");
+				columnCount = n;
+			}
+			$row = $row.clone();
+		} else {
+			// Only thead is defined: create default row markup
+			_assert(columnCount >= 1, "Need either <thead> or <tbody> with <td> elements to determine column count.");
+			$row = $("<tr />");
+			for(i=0; i<columnCount; i++) {
+				$row.append("<td />");
+			}
+		}
+		$row.find(">td").eq(tableOpts.nodeColumnIdx)
+			.html("<span class='fancytree-node' />");
+		if( opts.aria ) {
+			$row.attr("role", "row");
+			$row.find("td").attr("role", "gridcell");
+		}
+		tree.rowFragment = document.createDocumentFragment();
 		tree.rowFragment.appendChild($row.get(0));
+
+		// // If tbody contains a second row, use this as status node template
+		// $row = $tbody.children("tr:eq(1)");
+		// if( $row.length === 0 ) {
+		// 	tree.statusRowFragment = tree.rowFragment;
+		// } else {
+		// 	$row = $row.clone();
+		// 	tree.statusRowFragment = document.createDocumentFragment();
+		// 	tree.statusRowFragment.appendChild($row.get(0));
+		// }
+		//
+		$tbody.empty();
 
 		// Make sure that status classes are set on the node's <tr> elements
 		tree.statusClassPropName = "tr";
 		tree.ariaPropName = "tr";
 		this.nodeContainerAttrName = "tr";
 
+		// #489: make sure $container is set to <table>, even if ext-dnd is listed before ext-table
+		tree.$container = $table;
+
 		this._superApply(arguments);
 
 		// standard Fancytree created a root UL
 		$(tree.rootNode.ul).remove();
 		tree.rootNode.ul = null;
-		tree.$container = $table;
+
 		// Add container to the TAB chain
-		this.$container.attr("tabindex", this.options.tabbable ? "0" : "-1");
-		if(this.options.aria){
+		// #577: Allow to set tabindex to "0", "-1" and ""
+		this.$container.attr("tabindex", opts.tabindex);
+		// this.$container.attr("tabindex", opts.tabbable ? "0" : "-1");
+		if(opts.aria) {
 			tree.$container
 				.attr("role", "treegrid")
 				.attr("aria-readonly", true);
 		}
 	},
-	/* Called by nodeRender to sync node order with tag order.*/
-//    nodeFixOrder: function(ctx) {
-//    },
 	nodeRemoveChildMarkup: function(ctx) {
 		var node = ctx.node;
 //		node.debug("nodeRemoveChildMarkup()");
@@ -160,20 +231,31 @@ $.ui.fancytree.registerExtension({
 			opts = ctx.options,
 			isRootNode = !node.parent;
 
+		if( tree._enableUpdate === false ) {
+			// $.ui.fancytree.debug("*** nodeRender _enableUpdate: false");
+			return;
+		}
 		if( !_recursive ){
 			ctx.hasCollapsedParents = node.parent && !node.parent.expanded;
 		}
 		// $.ui.fancytree.debug("*** nodeRender " + node + ", isRoot=" + isRootNode, "tr=" + node.tr, "hcp=" + ctx.hasCollapsedParents, "parent.tr=" + (node.parent && node.parent.tr));
 		if( !isRootNode ){
-			if(!node.tr){
-				if( ctx.hasCollapsedParents /*&& !node.parent.tr*/ ) {
+			if( node.tr && force ) {
+				this.nodeRemoveMarkup(ctx);
+			}
+			if( !node.tr ) {
+				if( ctx.hasCollapsedParents && !deep ) {
 					// #166: we assume that the parent will be (recursively) rendered
 					// later anyway.
-					node.debug("nodeRender ignored due to unrendered parent");
+					// node.debug("nodeRender ignored due to unrendered parent");
 					return;
 				}
 				// Create new <tr> after previous row
+				// if( node.isStatusNode() ) {
+				// 	newRow = tree.statusRowFragment.firstChild.cloneNode(true);
+				// } else {
 				newRow = tree.rowFragment.firstChild.cloneNode(true);
+				// }
 				prevNode = findPrevRowNode(node);
 				// $.ui.fancytree.debug("*** nodeRender " + node + ": prev: " + prevNode.key);
 				_assert(prevNode);
@@ -186,8 +268,9 @@ $.ui.fancytree.registerExtension({
 //					newRow.style.color = "red";
 				}
 				if(!prevNode.tr){
-					_assert(!prevNode.parent, "prev. row must have a tr, or is system root");
-					tree.tbody.appendChild(newRow);
+					_assert(!prevNode.parent, "prev. row must have a tr, or be system root");
+					// tree.tbody.appendChild(newRow);
+					insertFirstChild(tree.tbody, newRow);  // #675
 				}else{
 					insertSiblingAfter(prevNode.tr, newRow);
 				}
@@ -196,11 +279,9 @@ $.ui.fancytree.registerExtension({
 					node.tr.id = opts.idPrefix + node.key;
 				}
 				node.tr.ftnode = node;
-				if(opts.aria){
-					// TODO: why doesn't this work:
-//                  node.li.role = "treeitem";
-					$(node.tr).attr("aria-labelledby", "ftal_" + node.key);
-				}
+				// if(opts.aria){
+				// 	$(node.tr).attr("aria-labelledby", "ftal_" + opts.idPrefix + node.key);
+				// }
 				node.span = $("span.fancytree-node", node.tr).get(0);
 				// Set icon, link, and title (normally this is only required on initial render)
 				this.nodeRenderTitle(ctx);
@@ -261,73 +342,87 @@ $.ui.fancytree.registerExtension({
 		// }
 	},
 	nodeRenderTitle: function(ctx, title) {
-		var $cb,
+		var $cb, res,
 			node = ctx.node,
-			opts = ctx.options;
+			opts = ctx.options,
+			isStatusNode = node.isStatusNode();
 
-		this._superApply(arguments);
+		res = this._super(ctx, title);
+
+		if( node.isRootNode() ) {
+			return res;
+		}
 		// Move checkbox to custom column
-		if(opts.checkbox && opts.table.checkboxColumnIdx != null ){
-			$cb = $("span.fancytree-checkbox", node.span).detach();
-			$(node.tr).find("td:first").html($cb);
+		if(opts.checkbox && !isStatusNode && opts.table.checkboxColumnIdx != null ){
+			$cb = $("span.fancytree-checkbox", node.span); //.detach();
+			$(node.tr).find("td").eq(+opts.table.checkboxColumnIdx).html($cb);
 		}
-		// Let user code write column content
-		// ctx.tree._triggerNodeEvent("renderColumns", node);
 		// Update element classes according to node state
-		if( ! node.isRoot() ){
-			this.nodeRenderStatus(ctx);
-		}
-		if( !opts.table.customStatus && node.isStatusNode() ) {
-			// default rendering for status node: leave other cells empty
+		this.nodeRenderStatus(ctx);
+
+		if( isStatusNode ) {
+			if( opts.renderStatusColumns ) {
+				// Let user code write column content
+				opts.renderStatusColumns.call(ctx.tree, {type: "renderStatusColumns"}, ctx);
+			} // else: default rendering for status node: leave other cells empty
 		} else if ( opts.renderColumns ) {
 			opts.renderColumns.call(ctx.tree, {type: "renderColumns"}, ctx);
 		}
+		return res;
 	},
 	nodeRenderStatus: function(ctx) {
 		var indent,
 			node = ctx.node,
 			opts = ctx.options;
 
-		this._superApply(arguments);
+		this._super(ctx);
 
 		$(node.tr).removeClass("fancytree-node");
 		// indent
 		indent = (node.getLevel() - 1) * opts.table.indentation;
-		$(node.span).css({marginLeft: indent + "px"});
+		$(node.span).css({paddingLeft: indent + "px"});  // #460
+		// $(node.span).css({marginLeft: indent + "px"});
 	 },
 	/* Expand node, return Deferred.promise. */
-	nodeSetExpanded: function(ctx, flag, opts) {
-		var dfd = new $.Deferred(),
-			subOpts = $.extend({}, opts, {noEvents: true, noAnimation: true});
+	nodeSetExpanded: function(ctx, flag, callOpts) {
+		// flag defaults to true
+		flag = (flag !== false);
 
-		opts = opts || {};
+		if((ctx.node.expanded && flag) || (!ctx.node.expanded && !flag)) {
+			// Expanded state isn't changed - just call base implementation
+			return this._superApply(arguments);
+		}
+
+		var dfd = new $.Deferred(),
+			subOpts = $.extend({}, callOpts, {noEvents: true, noAnimation: true});
+
+		callOpts = callOpts || {};
 
 		function _afterExpand(ok) {
-			flag = (flag !== false);
 			setChildRowVisibility(ctx.node, flag);
 			if( ok ) {
-				if( flag && ctx.options.autoScroll && !opts.noAnimation && ctx.node.hasChildren() ) {
+				if( flag && ctx.options.autoScroll && !callOpts.noAnimation && ctx.node.hasChildren() ) {
 					// Scroll down to last child, but keep current node visible
 					ctx.node.getLastChild().scrollIntoView(true, {topNode: ctx.node}).always(function(){
-						if( !opts.noEvents ) {
+						if( !callOpts.noEvents ) {
 							ctx.tree._triggerNodeEvent(flag ? "expand" : "collapse", ctx);
 						}
 						dfd.resolveWith(ctx.node);
 					});
 				} else {
-					if( !opts.noEvents ) {
+					if( !callOpts.noEvents ) {
 						ctx.tree._triggerNodeEvent(flag ? "expand" : "collapse", ctx);
 					}
 					dfd.resolveWith(ctx.node);
 				}
 			} else {
-				if( !opts.noEvents ) {
+				if( !callOpts.noEvents ) {
 					ctx.tree._triggerNodeEvent(flag ? "expand" : "collapse", ctx);
 				}
 				dfd.rejectWith(ctx.node);
 			}
 		}
-		// Call base-expand with disabled  events and animation
+		// Call base-expand with disabled events and animation
 		this._super(ctx, flag, subOpts).done(function () {
 			_afterExpand(true);
 		}).fail(function () {
@@ -348,6 +443,11 @@ $.ui.fancytree.registerExtension({
 	treeClear: function(ctx) {
 		this.nodeRemoveChildMarkup(this._makeHookContext(this.rootNode));
 		return this._superApply(arguments);
+	},
+	treeDestroy: function(ctx) {
+		this.$container.find("tbody").empty();
+		this.$source && this.$source.removeClass("ui-helper-hidden");
+		return this._superApply(arguments);
 	}
 	/*,
 	treeSetFocus: function(ctx, flag) {
@@ -356,4 +456,6 @@ $.ui.fancytree.registerExtension({
 		$.ui.fancytree.focusTree = ctx.tree;
 	}*/
 });
-}(jQuery, window, document));
+// Value returned by `require('jquery.fancytree..')`
+return $.ui.fancytree;
+}));  // End of closure
