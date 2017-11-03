@@ -4,16 +4,29 @@
  * Support faster lookup of nodes by key and shared ref-ids.
  * (Extension module for jquery.fancytree.js: https://github.com/mar10/fancytree/)
  *
- * Copyright (c) 2008-2015, Martin Wendt (http://wwWendt.de)
+ * Copyright (c) 2008-2017, Martin Wendt (http://wwWendt.de)
  *
  * Released under the MIT license
  * https://github.com/mar10/fancytree/wiki/LicenseInfo
  *
- * @version 2.8.0
- * @date 2015-02-08T17:56
+ * @version @VERSION
+ * @date @DATE
  */
 
-;(function($, window, document, undefined) {
+;(function( factory ) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define( [ "jquery", "./jquery.fancytree" ], factory );
+	} else if ( typeof module === "object" && module.exports ) {
+		// Node/CommonJS
+		require("jquery.fancytree");
+		module.exports = factory(require("jquery"));
+	} else {
+		// Browser globals
+		factory( jQuery );
+	}
+
+}( function( $ ) {
 
 "use strict";
 
@@ -271,6 +284,20 @@ $.ui.fancytree._FancytreeNodeClass.prototype.reRegister = function(key, refKey){
 
 
 /**
+ * [ext-clones] Define a refKey for an existing node.
+ * @param {string} refKey
+ * @returns {boolean}
+ *
+ * @alias FancytreeNode#setRefKey
+ * @requires jquery.fancytree.clones.js
+ * @since 2.16
+ */
+$.ui.fancytree._FancytreeNodeClass.prototype.setRefKey = function(refKey){
+	return this.reRegister(null, refKey);
+};
+
+
+/**
  * [ext-clones] Return all nodes with a given refKey (null if not found).
  * @param {string} refKey
  * @param {FancytreeNode} [rootNode] optionally restrict results to descendants of this node
@@ -328,7 +355,7 @@ $.ui.fancytree._FancytreeClass.prototype.changeRefKey = function(oldRefKey, newR
  */
 $.ui.fancytree.registerExtension({
 	name: "clones",
-	version: "0.0.3",
+	version: "@VERSION",
 	// Default options for this extension.
 	options: {
 		highlightActiveClones: true, // set 'fancytree-active-clone' on active clones and all peers
@@ -365,8 +392,8 @@ $.ui.fancytree.registerExtension({
 
 //		ctx.tree.debug("clones.treeRegisterNode", add, node);
 
-		if( key === "_statusNode" ){
-			return this._superApply(arguments);
+		if( node.isStatusNode() ){
+			return this._super(ctx, add, node);
 		}
 
 		if( add ) {
@@ -414,13 +441,13 @@ $.ui.fancytree.registerExtension({
 				}
 			}
 		}
-		return this._superApply(arguments);
+		return this._super(ctx, add, node);
 	},
 	nodeRenderStatus: function(ctx) {
 		var $span, res,
 			node = ctx.node;
 
-		res = this._superApply(arguments);
+		res = this._super(ctx);
 
 		if( ctx.options.clones.highlightClones ) {
 			$span = $(node[ctx.tree.statusClassPropName]);
@@ -432,7 +459,7 @@ $.ui.fancytree.registerExtension({
 		}
 		return res;
 	},
-	nodeSetActive: function(ctx, flag) {
+	nodeSetActive: function(ctx, flag, callOpts) {
 		var res,
 			scpn = ctx.tree.statusClassPropName,
 			node = ctx.node;
@@ -448,4 +475,6 @@ $.ui.fancytree.registerExtension({
 		return res;
 	}
 });
-}(jQuery, window, document));
+// Value returned by `require('jquery.fancytree..')`
+return $.ui.fancytree;
+}));  // End of closure

@@ -6,11 +6,11 @@
 if (window.jQuery) {
 
     $.fn.disable = function() {
-        this.attr("disabled", "disabled");
+        this.prop("disabled", true);
         this.addClass("disabled_button");
     };
     $.fn.enable = function() {
-        this.removeAttr("disabled");
+        this.prop("disabled", false);
         this.removeClass("disabled_button");
     };
 
