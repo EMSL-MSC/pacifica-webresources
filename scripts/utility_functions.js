@@ -18,7 +18,7 @@ if (window.jQuery) {
         var match = false;
         $.each(this, function(index, collectionObject) {
             $.each(collectionObject, function(key, value) {
-                if (key in secondObject && secondObject[key] == value) {
+                if (key in secondObject && secondObject[key] === value) {
                     match = true;
                 } else {
                     match = false;
@@ -110,7 +110,7 @@ if (window.jQuery) {
                 };
 
                 this.show = function() {
-                    if (input.val() == "")
+                    if (input.val() === "")
                         label.css({
                             textIndent: 0
                         });
@@ -123,7 +123,7 @@ if (window.jQuery) {
                     input.focus();
                 });
 
-                if (input.val() != "")
+                if (input.val() !== "")
                     this.hide();
             }
         });
